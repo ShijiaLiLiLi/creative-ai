@@ -96,6 +96,12 @@ def trainMusicModels(musicDirs):
               unigramModel objects.
     """
     models = [TrigramModel(), BigramModel(), UnigramModel()]
+    for music in musicDirs:
+        music = loadMusic(ldir)
+        for model in models:
+            model.trainModel(music)
+    return models
+    
     # call dataLoader.loadMusic for each directory in musicDirs
     pass
 
@@ -109,6 +115,12 @@ def selectNGramModel(models, sentence):
               (Remember that you wrote a function that checks if a model can
               be used to pick a word for a sentence!)
     """
+    if models[0].trainingDataHasNGram(sentence):
+        return models[0]
+    elif models[1].trainingDataHasNGram(sentence):
+        return models[1]
+    else:
+        return models[2]
     pass
 
 def generateLyricalSentence(models, desiredLength):
@@ -120,11 +132,19 @@ def generateLyricalSentence(models, desiredLength):
     Effects:  returns a list of strings where each string is a word in the
               generated sentence. The returned list should NOT include
               any of the special starting or ending symbols.
-
               For more details about generating a sentence using the
               NGramModels, see the spec.
     """
     sentence = ['^::^', '^:::^']
+    tokens = ''
+    while (sentenceTooLong(desiredLength, len(sentence) - 2) == False) and (tokens != '$:::$'):
+        modelSelected = selectNGramModel(models, sentence)
+        tokens = modelSelected.getNextToken(sentence)
+        sentence.append(tokens)
+    if tokens == '$:::$':
+        return sentence[2: -1]
+    else:
+        return sentence[2: ]
     pass
 
 def generateMusicalSentence(models, desiredLength, possiblePitches):
@@ -137,6 +157,15 @@ def generateMusicalSentence(models, desiredLength, possiblePitches):
               should be exactly the same as the core.
     """
     sentence = ['^::^', '^:::^']
+    tokens = ()
+    while (sentenceTooLong(desiredLength, len(sentence) - 2) == False) and (tokens != '$:::$'):
+        modelSelected = selectNGramModel(models, sentence)
+        tokens = modelSelected.getNextNote(sentence, possiblePitches)
+        sentence.append(tokens)
+    if tokens == '$:::$':
+        return sentence[2: -1]
+    else:
+        return sentence[2:  ]
     pass
 
 def runLyricsGenerator(models):
@@ -149,6 +178,14 @@ def runLyricsGenerator(models):
     verseOne = []
     verseTwo = []
     chorus = []
+    for i in range(4):
+        verseOne.insert(i, generateLyricalSentence(models, 7))
+    for j in range(4):
+        verseTwo.insert(j, generateLyricalSentence(models, 7))
+    for k in range(4):
+        chorus.insert(k, generateLyricalSentence(models, 7))
+    printSongLyrics(verseOne, verseTwo, chorus)
+    return
     pass
 
 def runMusicGenerator(models, songName):
@@ -158,6 +195,11 @@ def runMusicGenerator(models, songName):
     Effects:  uses models to generate a song and write it to the file
               named songName.wav
     """
+    a = random.choice(KEY_SIGNATURES.keys())
+    possiblePitches = KEY_SIGNATURES[a]
+    s = generateMusicalSentence(modles, 10, possiblePitches)
+    pysynth.make_wav(s, fn=songName)
+    
     pass
 
 ###############################################################################
@@ -165,10 +207,10 @@ def runMusicGenerator(models, songName):
 ###############################################################################
 
 PROMPT = """
-(1) Generate song lyrics by The Beatles
-(2) Generate a song using data from Nintendo Gamecube
-(3) Quit the music generator
-> """
+    (1) Generate song lyrics by The Beatles
+    (2) Generate a song using data from Nintendo Gamecube
+    (3) Quit the music generator
+    > """
 
 def main():
     """
@@ -176,13 +218,12 @@ def main():
     Modifies: Nothing
     Effects:  This is your main function, which is done for you. It runs the
               entire generator program for both the reach and the core.
-
               It prompts the user to choose to generate either lyrics or music.
     """
     # FIXME uncomment these lines when ready
     #lyricsTrained = False
     #musicTrained = False
-
+    
     if len(sys.argv) == 2:
         if sys.argv[1] == "--test":
             print("TEST MODE")
@@ -208,8 +249,7 @@ def main():
                     lyricsModels = trainLyricsModels(LYRICSDIRS)
                     print('Data successfully loaded')
                     lyricsTrained = True
-
-                runLyricsGenerator(lyricsModels)'''
+                    runLyricsGenerator(lyricsModels)'''
                 print("Under construction")
             elif userInput == 2:
                 # FIXME uncomment these lines when ready AND comment out "Under construction"
@@ -218,9 +258,8 @@ def main():
                     musicModels = trainMusicModels(MUSICDIRS)
                     print('Data successfully loaded')
                     musicTrained = True
-
-                songName = raw_input('What would you like to name your song? ')
-                runMusicGenerator(musicModels, WAVDIR + songName + '.wav')'''
+                    songName = raw_input('What would you like to name your song? ')
+                    runMusicGenerator(musicModels, WAVDIR + songName + '.wav')'''
                 print("Under construction")
             elif userInput == 3:
                 print('Thank you for using the ' + TEAM + ' music generator!')
@@ -232,7 +271,49 @@ def main():
 
 # This is how python tells if the file is being run as main
 if __name__ == '__main__':
-    main()
     # note that if you want to individually test functions from this file,
     # you can comment out main() and call those functions here. Just make
     # sure to call main() in your final submission of the project!
+    
+    text1 = [['^::^', '^:::^', 'I', 'AM', 'LSA', 'STUDENT', '$:::$'], ['^::^', '^:::^', 'LET', 'US', 'GO', 'I', 'BLUE', '$:::$']]
+    text2 = [['^::^', '^:::^', 'Love', 'I', 'cute', 'cat', 'Hate', '$:::$'], ['^::^', '^:::^', 'keke', 'lolo', 'mimi', 'fafa', 'soso', '$:::$']]
+    text3 = [['^::^', '^:::^', 'I', 'AM', 'Cat', 'song', 'dance', '$:::$'], ['^::^', '^:::^', 'LSA','STUDENT', 'Cat', 'Dog', 'Boom', '$:::$']]
+    trigramModel = TrigramModel()
+    bigramModel = BigramModel()
+    unigramModel = UnigramModel()
+    print unigramModel.trainModel(text1)
+    print bigramModel.trainModel(text2)
+    print trigramModel.trainModel(text3)
+    models = [trigramModel, bigramModel, unigramModel]
+    sentence1 = ['She', 'AM', 'Cat']
+    sentence2 = ['Sunday', 'Bala', 'Cat', 'lolo']
+    sentence3 = ['Salad', 'Burger', 'Cheese', 'Her']
+    print selectNGramModel(models, sentence1)
+    print selectNGramModel(models, sentence2)
+    print selectNGramModel(models, sentence3)
+    
+    print generateLyricalSentence(models, 20)
+    print generateLyricalSentence(models, 10)
+    print generateLyricalSentence(models, 7)
+    
+    possiblepitches = ['f#', 'c', 'ab', 'a', 'r', 'c#', 'f']
+    text = [['^::^', '^:::^', ('c4', 2), ('a7', 1), ('f#3', 16), ('db5', 4), ('f1', 20), ('r', 6), '$:::$'], ['^::^', '^:::^', ('b#2', 3), ('ab3', 2), ('r', 20), ('d4', 16), ('c#2', 6), ('ab6', 4), ('r', 4), '$:::$'], ['^::^', '^:::^', ('f#3', 16), ('c#2', 6), ('ab6', 4), ('db5', 9), ('f1', 3), ('r', 4), '$:::$']]
+    trigramModel = TrigramModel()
+    bigramModel = BigramModel()
+    unigramModel = UnigramModel()
+    print unigramModel.trainModel(text)
+    print bigramModel.trainModel(text)
+    print trigramModel.trainModel(text)
+    models = [trigramModel, bigramModel, unigramModel]
+    sentence1 = [('a3', 12), ('ab5', 1), ('c1', 9)]
+    sentence2 = [('b3', 3), ('ab6', 5), ('f#2', 10), ('f#3', 16)]
+    sentence3 = [('ab5', 20), ('db4', 2), ('c#2', 6), ('ab6', 4)]
+    print selectNGramModel(models, sentence1)
+    print selectNGramModel(models, sentence2)
+    print selectNGramModel(models, sentence3)
+    print generateMusicalSentence(models, 10, possiblepitches)
+    print generateMusicalSentence(models, 7, possiblepitches)
+    print generateMusicalSentence(models, 20, possiblepitches)
+    
+    print("*" * 40)
+    runLyricsGenerator(models)
